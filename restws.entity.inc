@@ -16,6 +16,9 @@ interface RestWSResourceControllerInterface {
    *
    * @param array $values
    *   Array that represents the resource.
+   *
+   * @return
+   *   The id of the newly created resource.
    */
   public function create(array $values);
 
@@ -97,7 +100,8 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
    * Creates a new resource with values matching the property info.
    */
   public function create(array $values) {
-    return entity_property_values_create_entity($this->entityType, $values);
+    $entity = entity_property_values_create_entity($this->entityType, $values);
+    return entity_id($this->entityType, $entity);
   }
 
   /**

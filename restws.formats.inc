@@ -7,23 +7,85 @@
  */
 
 /**
- * Interface implemented by formatter implementations for the http client
+ * Interface implemented by formatter implementations for the http client.
  */
 interface RestWSFormatInterface {
 
-  public function __construct($name, $info);
+  /**
+   * Gets the representation of a resource.
+   *
+   * @param RestWSResourceControllerInterface $resourceController
+   *   The controller used to retrieve the resource.
+   * @param $id
+   *   The id of the resource that should be returned.
+   *
+   * @return
+   *   The representation of the resource.
+   */
+  public function viewResource($resourceController, $id);
 
-  // TODO: add CRUD resource functions.
+  /**
+   * Create a resource.
+   *
+   * @param RestWSResourceControllerInterface $resourceController
+   *   The controller used to create the resource.
+   * @param $data
+   *   The representation of the resource.
+   *
+   * @return
+   *   The id of the newly created resource.
+   */
+  public function createResource($resourceController, $data);
+
+  /**
+   * Update a resource.
+   *
+   * @param RestWSResourceControllerInterface $resourceController
+   *   The controller used to update the resource.
+   * @param $id
+   *   The id of the resource that should be updated.
+   * @param $data
+   *   The representation of the resource.
+   */
+  public function updateResource($resourceController, $id, $data);
+
+  /**
+   * Delete a resource.
+   *
+   * @param RestWSResourceControllerInterface $resourceController
+   *   The controller used to update the resource.
+   * @param $id
+   *   The id of the resource that should be deleted.
+   */
+  public function deleteResource($resourceController, $id);
+
+  /**
+   * Serializes arbitrary data values.
+   *
+   * @param array $values
+   *  The data that should be serialized.
+   *
+   * @return
+   *  The serialized data as a string.
+   */
+  public function serialize(array $values);
+
+  /**
+   * Unserializes data.
+   *
+   * @param string $data
+   *  The data that should be unserialized.
+   *
+   * @return
+   *  The unserialized data.
+   */
+  public function unserialize($data);
 }
 
 /**
  * A base for all simple formats that are just serializing/unserializing values.
  */
 abstract class RestWSBaseFormat implements RestWSFormatInterface {
-
-  public function __construct($name, $info) {
-
-  }
 
   /**
    * Gets the representation of a resource.
@@ -38,7 +100,7 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
    */
   public function createResource($resourceController, $data) {
     $values = $this->unserialize($data);
-    $resourceController->create($values);
+    return $resourceController->create($values);
   }
 
   /**
@@ -55,34 +117,6 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
   public function deleteResource($resourceController, $id) {
     $resourceController->delete($id);
   }
-
-  /**
-   * Serializes arbitrary data values.
-   *
-   * @param array $values
-   *  The data that should be serialized.
-   *
-   * @return
-   *  The serialized data as a string.
-   */
-  abstract public function serialize($values);
-
-  /**
-   * Unserializes data.
-   *
-   * @param string $data
-   *  The data that should be unserialized.
-   *
-   * @return
-   *  The unserialized data.
-   */
-  abstract function unserialize($data);
-
-  /**
-   * Returns the mime type to use.
-   */
-  abstract function mimeType();
-
 }
 
 /**
@@ -90,17 +124,11 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
  */
 class RestWSFormatJSON extends RestWSBaseFormat {
 
-  protected $mimeType = 'application/json';
-
-  public function serialize($values) {
+  public function serialize(array $values) {
     return drupal_json_encode($values);
   }
 
   public function unserialize($data) {
     return drupal_json_decode($data);
-  }
-
-  public function mimeType() {
-    return $this->mimeType;
   }
 }

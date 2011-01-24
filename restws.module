@@ -69,6 +69,7 @@ function restws_restws_format_info() {
     'json' => array(
       'label' => t('JSON'),
       'class' => 'RestWSFormatJSON',
+      'mime type' => 'application/json',
     ),
   );
 }
