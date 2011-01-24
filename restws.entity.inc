@@ -141,7 +141,11 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
         if ($property instanceof EntityDrupalWrapper) {
           // For referenced entities only return the URI.
           if ($id = $property->getIdentifier()) {
-            $data[$name] = array('uri' => restws_resource_uri($property->type(), $id));
+            $data[$name] = array(
+              'uri' => restws_resource_uri($property->type(), $id),
+              'resource' => $property->type(),
+              'id' => $id,
+            );
           }
         }
         elseif ($property instanceof EntityValueWrapper) {

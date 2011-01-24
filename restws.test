@@ -1,0 +1,37 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * RESTful web services tests.
+ */
+
+class RestWSTestCase extends DrupalWebTestCase {
+
+  static function getInfo() {
+    return array(
+      'name' => 'RESTful web services tests',
+      'description' => 'Tests CRUD operations via the REST web service.',
+      'group' => 'Services',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('restws');
+  }
+
+  /**
+   * CRUD tests for nodes.
+   */
+  function testCRUD() {
+    // Test Read.
+    $node = $this->drupalCreateNode(array('title' => 'restws test node'));
+    $result = $this->curlExec(array(
+      CURLOPT_HTTPGET => TRUE,
+      CURLOPT_URL => url('node/' . $node->nid . '.json', array('absolute' => TRUE)),
+      CURLOPT_NOBODY => FALSE)
+    );
+    $node_array = drupal_json_decode($result);
+    $this->assertEqual($node->title, $node_array['title']);
+  }
+}
