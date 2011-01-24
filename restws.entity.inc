@@ -103,7 +103,7 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
   /**
    * Updates a resource with values matching the property info.
    */
-  public function update($id, $values) {
+  public function update($id, array $values) {
     $wrapper = $this->wrapper($id);
     foreach ($values as $name => $value) {
       $wrapper->name->set($value);
@@ -123,7 +123,7 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
    *
    * @see entity_access()
    */
-  public function access($op, $id = NULL) {
+  public function access($op, $id) {
     return entity_access($op, $this->entityType, isset($id) ? $this->wrapper($id)->value() : NULL);
   }
 }
