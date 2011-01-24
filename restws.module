@@ -48,7 +48,7 @@ function restws_restws_resource_info() {
 /**
  * Returns a instance of a resource controller.
  *
- * @return RestWSEntityResourceController
+ * @return RestWSResourceControllerInterface
  */
 function restws_resource_controller($name) {
   $static = &drupal_static(__FUNCTION__);
@@ -94,10 +94,10 @@ function restws_format_controller($name) {
  *   One of 'create', 'update', 'delete' or 'view'.
  */
 function restws_handle_request($op, $format, $resource, $id = NULL) {
-  if (($resource = restws_resource_controller($resource)) && $resource->access($op, $id)) {
+  if (($resource_controller = restws_resource_controller($resource)) && $resource_controller->access($op, $id)) {
     try {
       $method = $op . 'Resource';
-      print $format->$method($resource, $id);
+      print $format->$method($resource_controller, $id);
     }
     catch (RestWSException $e) {
       echo check_plain($e->getHTTPError());

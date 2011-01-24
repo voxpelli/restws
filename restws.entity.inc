@@ -90,7 +90,7 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
    * Returns a metadata wrapper for the resource with the given id.
    */
   public function read($id) {
-    return entity_metadata_wrapper($this->entityType, $id);
+    return self::getData($this->wrapper($id));
   }
 
   /**
@@ -125,5 +125,32 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
    */
   public function access($op, $id) {
     return entity_access($op, $this->entityType, isset($id) ? $this->wrapper($id)->value() : NULL);
+  }
+
+  /**
+   * Gets a simple PHP array using URI references for some wrapped data.
+   */
+  public static function getData($wrapper) {
+    $data = array();
+    foreach ($wrapper as $name => $property) {
+      try {
+        if ($property instanceof EntityDrupalWrapper) {
+          // For referenced entities only return the URI.
+          if ($id = $property->getIdentifier()) {
+            $data[$name] = array('uri' => restws_resource_uri($property->type(), $id));
+          }
+        }
+        elseif ($property instanceof EntityValueWrapper) {
+          $data[$name] = $property->value();
+        }
+        elseif ($property instanceof EntityListWrapper || $property instanceof EntityStructureWrapper) {
+          $data[$name] = self::getData($property);
+        }
+      }
+      catch (EntityMetadataWrapperException $e) {
+        // A property causes problems - ignore that.
+      }
+    }
+    return $data;
   }
 }

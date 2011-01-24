@@ -29,8 +29,8 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
    * Gets the representation of a resource.
    */
   public function viewResource($resourceController, $id) {
-    $wrapper = $resourceController->wrapper($id);
-    return $this->serialize(self::getData($wrapper));
+    $values = $resourceController->read($id);
+    return $this->serialize($values);
   }
 
   /**
@@ -54,35 +54,6 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
    */
   public function deleteResource($resourceController, $id) {
     $resourceController->delete($id);
-  }
-
-
-
-  /**
-   * Gets a simple PHP array using URI references for some wrapped data.
-   */
-  public static function getData($wrapper) {
-    $data = array();
-    foreach ($wrapper as $name => $property) {
-      try {
-        if ($property instanceof EntityDrupalWrapper) {
-          // For referenced entities only return the URI.
-          if ($id = $property->getIdentifier()) {
-            $data[$name] = array('uri' => restws_resource_uri($property->type(), $id));
-          }
-        }
-        elseif ($property instanceof EntityValueWrapper) {
-          $data[$name] = $property->value();
-        }
-        elseif ($property instanceof EntityListWrapper || $property instanceof EntityStructureWrapper) {
-          $data[$name] = self::getData($property);
-        }
-      }
-      catch (EntityMetadataWrapperException $e) {
-        // A property causes problems - ignore that.
-      }
-    }
-    return $data;
   }
 
   /**
