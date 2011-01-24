@@ -2,7 +2,8 @@
 // $Id$
 
 /**
- * @file RESTful web services module integration for entities.
+ * @file
+ * RESTful web services module integration for entities.
  */
 
 

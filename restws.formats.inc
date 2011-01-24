@@ -2,7 +2,8 @@
 // $Id$
 
 /**
- * @file RESTful web services module formats.
+ * @file
+ * RESTful web services module formats.
  */
 
 /**
