@@ -36,7 +36,7 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
   /**
    * Creates a new resource.
    */
-  public function createResource($resource, $data) {
+  public function createResource($resourceController, $data) {
     $values = $this->unserialize($data);
     $resourceController->create($values);
   }
@@ -44,7 +44,7 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
   /**
    * Updates a resource.
    */
-  public function updateResource($resource, $id, $data) {
+  public function updateResource($resourceController, $id, $data) {
     $values = $this->unserialize($data);
     $resourceController->update($id, $values);
   }
@@ -52,7 +52,7 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
   /**
    * Deletes a resource.
    */
-  public function deleteResource($resource, $id) {
+  public function deleteResource($resourceController, $id) {
     $resourceController->delete($id);
   }
 
