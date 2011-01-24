@@ -21,11 +21,11 @@ function restws_get_resource_info() {
 /**
  * Returns info about all defined formats.
  */
-function restws_get_format_controller_info() {
+function restws_get_format_info() {
   $info = &drupal_static(__FUNCTION__);
   if (!isset($info)) {
-    $info = module_invoke_all('restws_format_controller_info');
-    drupal_alter('restws_format_controller_info', $info);
+    $info = module_invoke_all('restws_format_info');
+    drupal_alter('restws_format_info', $info);
   }
   return $info;
 }
@@ -60,11 +60,11 @@ function restws_resource_controller($name) {
 }
 
 /**
- * Implements hook_restws_format_controller_info().
+ * Implements hook_restws_format_info().
  *
  * Provides basic formats.
  */
-function restws_restws_format_controller_info() {
+function restws_restws_format_info() {
   return array(
     'json' => array(
       'label' => t('JSON'),
@@ -81,7 +81,7 @@ function restws_restws_format_controller_info() {
 function restws_format_controller($name) {
   $static = &drupal_static(__FUNCTION__);
   if (!isset($static[$name])) {
-    $info = restws_get_format_controller_info();
+    $info = restws_get_format_info();
     $static[$name] = isset($info[$name]) ? new $info[$name]['class']($name, $info) : FALSE;
   }
   return $static[$name];
