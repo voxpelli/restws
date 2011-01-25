@@ -80,12 +80,26 @@ interface RestWSFormatInterface {
    *  The unserialized data.
    */
   public function unserialize($data);
+
+  /**
+   * Returns the mime type of this format, e.g. 'application/json' or
+   * 'application/xml'.
+   */
+  public function mimeType();
 }
 
 /**
  * A base for all simple formats that are just serializing/unserializing values.
  */
 abstract class RestWSBaseFormat implements RestWSFormatInterface {
+
+  protected $formatName;
+  protected $formatInfo;
+
+  public function __construct($name, $info) {
+    $this->formatName = $name;
+    $this->formatInfo = $info;
+  }
 
   /**
    * Gets the representation of a resource.
@@ -116,6 +130,10 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
    */
   public function deleteResource($resourceController, $id) {
     $resourceController->delete($id);
+  }
+
+  public function mimeType() {
+    return $this->formatInfo['mime type'];
   }
 }
 

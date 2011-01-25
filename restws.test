@@ -35,6 +35,7 @@ class RestWSTestCase extends DrupalWebTestCase {
     $node_array = drupal_json_decode($result);
     $this->assertEqual($node->title, $node_array['title'], 'Node title was received correctly.');
     $this->assertResponse('200', 'HTTP response code is correct.');
+    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_CONTENT_TYPE), 'application/json', 'HTTP content type is correct.');
 
     // Test Create.
     $account = $this->drupalCreateUser(array('access content', 'bypass node access'));
@@ -67,6 +68,7 @@ class RestWSTestCase extends DrupalWebTestCase {
     $node = node_load($nid);
     $this->assertEqual($title, $node->title, 'Node title in DB is equal to the new title.');
     $this->assertResponse('201', 'HTTP response code is correct.');
+    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_CONTENT_TYPE), 'application/json', 'HTTP content type is correct.');
 
     // Test Update.
     // Reset curl.
@@ -86,6 +88,7 @@ class RestWSTestCase extends DrupalWebTestCase {
     $node = node_load($node->nid, NULL, TRUE);
     $this->assertEqual($new_title, $node->title, 'Node title in DB is equal to the updated title.');
     $this->assertResponse('200', 'HTTP response code is correct.');
+    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_CONTENT_TYPE), 'application/json', 'HTTP content type is correct.');
 
     // Test delete.
     // Reset curl.
@@ -102,5 +105,6 @@ class RestWSTestCase extends DrupalWebTestCase {
     $node = node_load($node->nid, NULL, TRUE);
     $this->assertFalse($node, 'Node is not in the DB anymore.');
     $this->assertResponse('200', 'HTTP response code is correct.');
+    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_CONTENT_TYPE), 'application/json', 'HTTP content type is correct.');
   }
 }

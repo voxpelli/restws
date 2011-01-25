@@ -54,7 +54,7 @@ function restws_resource_controller($name) {
   $static = &drupal_static(__FUNCTION__);
   if (!isset($static[$name])) {
     $info = restws_restws_resource_info();
-    $static[$name] = isset($info[$name]) ? new $info[$name]['class']($name, $info) : FALSE;
+    $static[$name] = isset($info[$name]) ? new $info[$name]['class']($name, $info[$name]) : FALSE;
   }
   return $static[$name];
 }
@@ -75,15 +75,15 @@ function restws_restws_format_info() {
 }
 
 /**
- * Returns a instance of a format.
+ * Returns an instance of a format.
  *
- * @return RestWSEntityResourceController
+ * @return RestWSFormatInterface
  */
-function restws_format_controller($name) {
+function restws_format($name) {
   $static = &drupal_static(__FUNCTION__);
   if (!isset($static[$name])) {
     $info = restws_get_format_info();
-    $static[$name] = isset($info[$name]) ? new $info[$name]['class']($name, $info) : FALSE;
+    $static[$name] = isset($info[$name]) ? new $info[$name]['class']($name, $info[$name]) : FALSE;
   }
   return $static[$name];
 }
@@ -105,6 +105,7 @@ function restws_handle_request($op, $format, $resource, $id = NULL, $payload = N
       else {
         print $format->$method($resource_controller, $id, $payload);
       }
+      drupal_add_http_header('Content-Type', $format->mimeType());
     }
     catch (RestWSException $e) {
       echo check_plain($e->getHTTPError());
@@ -181,7 +182,7 @@ function restws_page_callback($resource, $page_callback = NULL) {
   // Check for a appended .format string.
   if (($pos = strpos($id_arg, '.')) && $format_name = substr($id_arg, $pos + 1)) {
     $id = substr($id_arg, 0, $pos);
-    $format = restws_format_controller($format_name);
+    $format = restws_format($format_name);
   }
   else {
     // Get format MIME type form HTTP Accept header
@@ -228,18 +229,18 @@ function restws_resource_uri($resource, $id) {
 }
 
 /**
- * Returns the format key for a given MIME type.
+ * Returns the format instance for a given MIME type.
  *
  * @param $mime
  *   The MIME type, e.g. 'application/json' or 'application/xml'.
  *
  * @return
- *   The format copntroller or FALSE if the format was not found.
+ *   The format coontroller or FALSE if the format was not found.
  */
 function restws_format_mimetype($mime) {
   foreach (restws_get_format_info() as $format_name => $info) {
     if ($info['mime type'] == $mime) {
-      return restws_format_controller($format_name);
+      return restws_format($format_name);
     }
   }
   return FALSE;
