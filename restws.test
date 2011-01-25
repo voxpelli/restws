@@ -34,7 +34,7 @@ class RestWSTestCase extends DrupalWebTestCase {
     );
     $node_array = drupal_json_decode($result);
     $this->assertEqual($node->title, $node_array['title'], 'Node title was received correctly.');
-    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE), '200', 'HTTP response code is correct.');
+    $this->assertResponse('200', 'HTTP response code is correct.');
 
     // Test Create.
     $account = $this->drupalCreateUser(array('access content', 'bypass node access'));
@@ -66,7 +66,7 @@ class RestWSTestCase extends DrupalWebTestCase {
     $nid = $result_array['id'];
     $node = node_load($nid);
     $this->assertEqual($title, $node->title, 'Node title in DB is equal to the new title.');
-    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE), '201', 'HTTP response code is correct.');
+    $this->assertResponse('201', 'HTTP response code is correct.');
 
     // Test Update.
     // Reset curl.
@@ -85,6 +85,22 @@ class RestWSTestCase extends DrupalWebTestCase {
     // Clear the static cache, otherwise we won't see the update.
     $node = node_load($node->nid, NULL, TRUE);
     $this->assertEqual($new_title, $node->title, 'Node title in DB is equal to the updated title.');
-    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE), '200', 'HTTP response code is correct.');
+    $this->assertResponse('200', 'HTTP response code is correct.');
+
+    // Test delete.
+    // Reset curl.
+    unset($this->curlHandle);
+    $this->drupalLogin($account);
+    $result = $this->curlExec(array(
+      CURLOPT_HTTPGET => FALSE,
+      CURLOPT_CUSTOMREQUEST => 'DELETE',
+      CURLOPT_URL => url('node/' . $node->nid, array('absolute' => TRUE)),
+      CURLOPT_NOBODY => FALSE,
+      CURLOPT_HTTPHEADER => array('Accept: application/json'),
+    ));
+    // Clear the static cache, otherwise we won't see the update.
+    $node = node_load($node->nid, NULL, TRUE);
+    $this->assertFalse($node, 'Node is not in the DB anymore.');
+    $this->assertResponse('200', 'HTTP response code is correct.');
   }
 }
