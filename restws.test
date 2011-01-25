@@ -66,5 +66,6 @@ class RestWSTestCase extends DrupalWebTestCase {
     $nid = $result_array['id'];
     $node = node_load($nid);
     $this->assertEqual($title, $node->title, 'Node title in DB is equal to the new title.');
+    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE), '201', 'HTTP response code is correct.');
   }
 }

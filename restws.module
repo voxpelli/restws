@@ -100,6 +100,7 @@ function restws_handle_request($op, $format, $resource, $id = NULL, $payload = N
       $method = $op . 'Resource';
       if ($op == 'create') {
         print $format->$method($resource_controller, $payload);
+        drupal_add_http_header('Status', '201 Created');
       }
       else {
         print $format->$method($resource_controller, $id, $payload);
