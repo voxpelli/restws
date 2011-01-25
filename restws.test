@@ -25,13 +25,46 @@ class RestWSTestCase extends DrupalWebTestCase {
    */
   function testCRUD() {
     // Test Read.
-    $node = $this->drupalCreateNode(array('title' => 'restws test node'));
+    $title = $this->randomName(8);
+    $node = $this->drupalCreateNode(array('title' => $title));
     $result = $this->curlExec(array(
       CURLOPT_HTTPGET => TRUE,
       CURLOPT_URL => url('node/' . $node->nid . '.json', array('absolute' => TRUE)),
       CURLOPT_NOBODY => FALSE)
     );
     $node_array = drupal_json_decode($result);
-    $this->assertEqual($node->title, $node_array['title']);
+    $this->assertEqual($node->title, $node_array['title'], 'Node title was received correctly.');
+    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE), '200', 'HTTP response code is correct.');
+
+    // Test Create.
+    $account = $this->drupalCreateUser(array('access content', 'bypass node access'));
+    $this->drupalLogin($account);
+    $title = $this->randomName(8);
+    $new_node = array(
+      'body'      => array(LANGUAGE_NONE => array(array())),
+      'title'     => $title,
+      'comment'   => 2,
+      'promote'   => 0,
+      'revision'  => 1,
+      'log'       => '',
+      'status'    => 1,
+      'sticky'    => 0,
+      'type'      => 'page',
+      'language'  => LANGUAGE_NONE,
+      'author'    => $account->uid,
+    );
+    $json = drupal_json_encode($new_node);
+    $result = $this->curlExec(array(
+      CURLOPT_HTTPGET => FALSE,
+      CURLOPT_CUSTOMREQUEST => 'PUT',
+      CURLOPT_POSTFIELDS => $json,
+      CURLOPT_URL => url('node', array('absolute' => TRUE)),
+      CURLOPT_NOBODY => FALSE,
+      CURLOPT_HTTPHEADER => array('Accept: application/json'),
+    ));
+    $result_array = drupal_json_decode($result);
+    $nid = $result_array['id'];
+    $node = node_load($nid);
+    $this->assertEqual($title, $node->title, 'Node title in DB is equal to the new title.');
   }
 }

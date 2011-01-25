@@ -101,7 +101,13 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
    */
   public function create(array $values) {
     $entity = entity_property_values_create_entity($this->entityType, $values);
-    return entity_id($this->entityType, $entity);
+    $entity->save();
+    $id = $entity->getIdentifier();
+    return array(
+      'id' => $id,
+      'uri' => restws_resource_uri($this->entityType, $id),
+      'resource' => $this->entityType,
+    );
   }
 
   /**

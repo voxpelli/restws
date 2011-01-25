@@ -124,6 +124,14 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
  */
 class RestWSFormatJSON extends RestWSBaseFormat {
 
+  /**
+   * Creates a new resource.
+   */
+  public function createResource($resourceController, $data) {
+    $values = $this->unserialize($data);
+    return drupal_json_encode($resourceController->create($values));
+  }
+
   public function serialize(array $values) {
     return drupal_json_encode($values);
   }
