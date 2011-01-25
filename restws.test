@@ -67,5 +67,24 @@ class RestWSTestCase extends DrupalWebTestCase {
     $node = node_load($nid);
     $this->assertEqual($title, $node->title, 'Node title in DB is equal to the new title.');
     $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE), '201', 'HTTP response code is correct.');
+
+    // Test Update.
+    // Reset curl.
+    unset($this->curlHandle);
+    $this->drupalLogin($account);
+    $new_title = $this->randomName(8);
+    $json = drupal_json_encode(array('title' => $new_title));
+    $this->curlExec(array(
+      CURLOPT_HTTPGET => FALSE,
+      CURLOPT_POST => TRUE,
+      CURLOPT_POSTFIELDS => $json,
+      CURLOPT_URL => url('node/' . $node->nid, array('absolute' => TRUE)),
+      CURLOPT_NOBODY => FALSE,
+      CURLOPT_HTTPHEADER => array('Accept: application/json'),
+    ));
+    // Clear the static cache, otherwise we won't see the update.
+    $node = node_load($node->nid, NULL, TRUE);
+    $this->assertEqual($new_title, $node->title, 'Node title in DB is equal to the updated title.');
+    $this->assertEqual(curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE), '200', 'HTTP response code is correct.');
   }
 }
