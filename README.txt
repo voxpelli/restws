@@ -9,8 +9,9 @@ Maintainers:
  * Klaus Purer (klausi), klaus.purer@epiqo.com
 
 Exposes Drupal resources (e.g. entities) as RESTful web services. The module
-uses the Entity API and entity metadata (property information) to provide
-resource representations. It aims to be fully compliant to the REST principles.
+makes use of the Entity API and the information about entity properties
+(provided via hook_entity_property_info()) to provide resource representations.
+It aims to be fully compliant to the REST principles.
 
 Installation
 ------------
@@ -18,6 +19,7 @@ Installation
  * Copy the whole restws directory to your modules directory
    (e.g. DRUPAL_ROOT/sites/all/modules) and activate the RESTful Web Services
    module.
+ * There is no user interface or such needed.
 
 Usage / Testing
 ---------------
@@ -29,12 +31,17 @@ Usage / Testing
    http://yoursite.com/<entity type name>/<entity id>.json
 
    for an example.
+   
+ * The module will respect your access permissions, so make sure you are logged
+   in.
+
 
 Design goals and concept
 ------------------------
 
- * Create a module that exposes Drupal resources (e.g. entities) as web
-   services. It should be fully compliant to the REST principles.
+ * Create a module that simply exposes Drupal's data (e.g. entities) as web
+   resources, thus creating a simple RESTful web service. It aims to be fully
+   compliant to the REST principles.
 
  * The module is strictly resource-oriented. No support for message-oriented or
    RPC-style web services.
@@ -47,23 +54,32 @@ Design goals and concept
 
  * Resources are represented and exchanged in different formats, e.g. JSON or
    XML. The format has to be specified in every request.
+   
+ * The module defines resource for all entity types supported by the entity API
+   as well as a JSON format. Modules may provide further resources and formats
+   via hooks.
 
- * CRUD (Create, Read, Update, Delete) support for entities
-   * Create: HTTP PUT /<entity type name> (requires HTTP Accept header set to
-     the MIME type of <format>)
-   * Read: HTTP GET /<entity type name>/<entity id>.<format>
-     or    HTTP GET /<entity type name>/<entity id> (requires HTTP Accept header
-     set to the MIME type of <format>)
-   * Update: HTTP POST /<entity type name>/<entity id>.<format>
-     or      HTTP POST /<entity type name>/<entity id> (requires HTTP Accept
-     header set to the MIME type of the posted format)
-   * Delete: HTTP DELETE /<entity type name>/<entity id>
+ * The module supports full CRUD (Create, Read, Update, Delete) for resources:
+ 
+     * Create: HTTP PUT /<entity type name> (requires HTTP Accept header set to
+       the MIME type of <format>)
+
+     * Read: HTTP GET /<entity type name>/<entity id>.<format>
+       or    HTTP GET /<entity type name>/<entity id> (requires HTTP Accept
+       header set to the MIME type of <format>)
+
+     * Update: HTTP POST /<entity type name>/<entity id>.<format>
+       or      HTTP POST /<entity type name>/<entity id> (requires HTTP Accept
+       header set to the MIME type of the posted format)
+
+     * Delete: HTTP DELETE /<entity type name>/<entity id>
 
  * The representation <format> can be json, xml etc.
 
- * Permission checking is done with the standard Drupal access and permission
-   system on a Drupal user basis.
+ * The usual Drupal permission system is respected, thus permissions are checked
+   for the logged in user account of the received requests. 
 
- * Authentication can be achieved via HTTP Basic Authentication (see the
-   restws_auth_basic submodule that performs a user login from HTTP headers) or
-   via standard Drupal cookies and session handling.
+ * Authentication can be achieved via separate modules, maybe making use of the
+   standard Drupal cookie and session handling. The module comes with an
+   optional HTTP Basic Authentication module (restws_auth_basic) that performs
+   a user login with the credentials provided via the usual HTTP headers.
