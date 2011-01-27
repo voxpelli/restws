@@ -212,7 +212,8 @@ function restws_page_callback($resource, $page_callback = NULL) {
     restws_handle_request($op, $format, $resource, $id, $payload);
   }
 
-  // @todo: Determine wrong human readable URIs and redirect.
+  // @todo: Determine human readable URIs and redirect, if there is no
+  // page callback.
   if (isset($page_callback)) {
     // Further page callback arguments have been appended to our arguments.
     $args = func_get_args();
@@ -229,13 +230,25 @@ function restws_resource_uri($resource, $id) {
 }
 
 /**
+ * Returns an array representing a reference on the given resource. To ease
+ * usage, we provide the full URI as well as the resource and its id separately.
+ */
+function restws_resource_reference($resource, $id) {
+  return array(
+    'uri' => restws_resource_uri($resource, $id),
+    'id' => $id,
+    'resource' => $resource,
+  );
+}
+
+/**
  * Returns the format instance for a given MIME type.
  *
  * @param $mime
  *   The MIME type, e.g. 'application/json' or 'application/xml'.
  *
  * @return
- *   The format coontroller or FALSE if the format was not found.
+ *   The format controller or FALSE if the format was not found.
  */
 function restws_format_mimetype($mime) {
   foreach (restws_get_format_info() as $format_name => $info) {

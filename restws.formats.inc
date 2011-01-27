@@ -59,27 +59,6 @@ interface RestWSFormatInterface {
    */
   public function deleteResource($resourceController, $id);
 
-  /**
-   * Serializes arbitrary data values.
-   *
-   * @param array $values
-   *  The data that should be serialized.
-   *
-   * @return
-   *  The serialized data as a string.
-   */
-  public function serialize(array $values);
-
-  /**
-   * Unserializes data.
-   *
-   * @param string $data
-   *  The data that should be unserialized.
-   *
-   * @return
-   *  The unserialized data.
-   */
-  public function unserialize($data);
 
   /**
    * Returns the mime type of this format, e.g. 'application/json' or
@@ -114,7 +93,8 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
    */
   public function createResource($resourceController, $data) {
     $values = $this->unserialize($data);
-    return $resourceController->create($values);
+    $uri = $resourceController->create($values);
+    return $this->serialize($uri);
   }
 
   /**
@@ -138,17 +118,9 @@ abstract class RestWSBaseFormat implements RestWSFormatInterface {
 }
 
 /**
- * A base formatter to format json.
+ * A formatter to format json.
  */
 class RestWSFormatJSON extends RestWSBaseFormat {
-
-  /**
-   * Creates a new resource.
-   */
-  public function createResource($resourceController, $data) {
-    $values = $this->unserialize($data);
-    return drupal_json_encode($resourceController->create($values));
-  }
 
   public function serialize(array $values) {
     return drupal_json_encode($values);

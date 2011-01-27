@@ -18,7 +18,7 @@ interface RestWSResourceControllerInterface {
    *   Array that represents the resource.
    *
    * @return
-   *   The id of the newly created resource.
+   *   An array describing the URI of the newly created resource.
    */
   public function create(array $values);
 
@@ -35,6 +35,7 @@ interface RestWSResourceControllerInterface {
 
   /**
    * Update an existing resource.
+   *
    * @param $id
    *   The id of the resource that should be updated.
    * @param array $values
@@ -53,14 +54,14 @@ interface RestWSResourceControllerInterface {
   /**
    * Determines access for a given operation and resource.
    *
-   * @param $operation
+   * @param $op
    *   Either 'create', 'view' (= read), 'update' or 'delete'.
    * @param $id
    *   The id of the resource.
    *
    * @see entity_access()
    */
-  public function access($operation, $id);
+  public function access($op, $id);
 }
 
 /**
@@ -90,7 +91,7 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
   }
 
   /**
-   * Returns a metadata wrapper for the resource with the given id.
+   * Returns an array representing the resource.
    */
   public function read($id) {
     return self::getData($this->wrapper($id));
@@ -103,11 +104,7 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
     $entity = entity_property_values_create_entity($this->entityType, $values);
     $entity->save();
     $id = $entity->getIdentifier();
-    return array(
-      'id' => $id,
-      'uri' => restws_resource_uri($this->entityType, $id),
-      'resource' => $this->entityType,
-    );
+    return restws_resource_reference($this->entityType, $id);
   }
 
   /**
@@ -147,11 +144,7 @@ class RestWSEntityResourceController implements RestWSResourceControllerInterfac
         if ($property instanceof EntityDrupalWrapper) {
           // For referenced entities only return the URI.
           if ($id = $property->getIdentifier()) {
-            $data[$name] = array(
-              'uri' => restws_resource_uri($property->type(), $id),
-              'resource' => $property->type(),
-              'id' => $id,
-            );
+            $data[$name] = restws_resource_reference($property->type(), $id);
           }
         }
         elseif ($property instanceof EntityValueWrapper) {
