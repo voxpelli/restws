@@ -19,156 +19,194 @@ function restws_get_resource_info() {
 }
 
 /**
- * Returns info about all defined formats.
- */
-function restws_get_format_info() {
-  $info = &drupal_static(__FUNCTION__);
-  if (!isset($info)) {
-    $info = module_invoke_all('restws_format_info');
-    drupal_alter('restws_format_info', $info);
+* Implementation of hook_ctools_plugin_api().
+*/
+function restws_ctools_plugin_api($module, $api) {
+  if ($module == 'services' && $api == 'services') {
+    return array('version' => 3);
   }
-  return $info;
 }
 
 /**
- * Implements hook_restws_resource_info().
- *
- * Provides resources for all entity types.
+ * Implements hook_services_resources().
  */
-function restws_restws_resource_info() {
+function restws_services_resources() {
   foreach (entity_get_info() as $entity_type => $info) {
-    $result[$entity_type] = array(
-      'label' => $info['label'],
-      'class' => 'RestWSEntityResourceController',
-    );
+    $result['restws_' . $entity_type] = _restws_resource_definition($entity_type);
   }
   return $result;
 }
 
-/**
- * Returns a instance of a resource controller.
- *
- * @return RestWSResourceControllerInterface
- */
-function restws_resource_controller($name) {
-  $static = &drupal_static(__FUNCTION__);
-  if (!isset($static[$name])) {
-    $info = restws_restws_resource_info();
-    $static[$name] = isset($info[$name]) ? new $info[$name]['class']($name, $info[$name]) : FALSE;
-  }
-  return $static[$name];
-}
+function _restws_resource_definition($entity_type) {
+  $entity_arg = array(
+    'name' => 'entity_type',
+    'type' => 'string',
+    'default value' => $entity_type,
+    'description' => 'The type of the entity',
+  );
+  $base = array(
+    'access callback' => '_restws_resource_access',
+    'access arguments append' => TRUE,
+  );
 
-/**
- * Implements hook_restws_format_info().
- *
- * Provides basic formats.
- */
-function restws_restws_format_info() {
   return array(
-    'json' => array(
-      'label' => t('JSON'),
-      'class' => 'RestWSFormatJSON',
-      'mime type' => 'application/json',
-    ),
+    'retrieve' => array(
+      'callback' => '_restws_resource_retrieve',
+      'access arguments' => array('view'),
+      'args' => array(
+        $entity_arg,
+        array(
+          'name' => 'id',
+          'optional' => FALSE,
+          'source' => array('path' => 0),
+          'type' => 'int',
+          'description' => 'The id of the entity',
+        ),
+      ),
+    ) + $base,
+    'create' => array(
+      'callback' => '_restws_resource_create',
+      'access arguments' => array('create'),
+      'args' => array(
+        $entity_arg,
+        array(
+          'name' => 'values',
+          'optional' => FALSE,
+          'source' => 'data',
+          'description' => 'The entity object to create',
+          'type' => 'struct',
+        ),
+      ),
+    ) + $base,
+    'update' => array(
+      'callback' => '_restws_resource_update',
+      'access arguments' => array('update'),
+      'args' => array(
+        $entity_arg,
+        array(
+          'name' => 'id',
+          'optional' => FALSE,
+          'source' => array('path' => 0),
+          'type' => 'int',
+          'description' => 'The id of the entity',
+        ),
+        array(
+          'name' => 'values',
+          'optional' => FALSE,
+          'source' => 'data',
+          'description' => 'The entity object to update',
+          'type' => 'struct',
+        ),
+      ),
+    ) + $base,
+    'delete' => array(
+      'callback' => '_restws_resource_delete',
+      'access arguments' => array('delete'),
+      'args' => array(
+        $entity_arg,
+        array(
+          'name' => 'id',
+          'optional' => FALSE,
+          'source' => array('path' => 0),
+          'type' => 'int',
+          'description' => 'The id of the entity',
+        ),
+      ),
+    ) + $base,
   );
 }
 
-/**
- * Returns an instance of a format.
- *
- * @return RestWSFormatInterface
- */
-function restws_format($name) {
-  $static = &drupal_static(__FUNCTION__);
-  if (!isset($static[$name])) {
-    $info = restws_get_format_info();
-    $static[$name] = isset($info[$name]) ? new $info[$name]['class']($name, $info[$name]) : FALSE;
-  }
-  return $static[$name];
+function _restws_resource_access($op, $args) {
+  $entity_type = $args[0];
+  $id = ($op != 'create' && isset($args[1])) ? $args[1] : NULL;
+  $value = isset($id) ? entity_metadata_wrapper($entity_type, $id)->value() : NULL;
+  return entity_access($op, $entity_type, $value);
 }
 
-/**
- * Handles a request.
- *
- * @param $op
- *   One of 'create', 'update', 'delete' or 'view'.
- */
-function restws_handle_request($op, $format, $resource, $id = NULL, $payload = NULL) {
-  if (($resource_controller = restws_resource_controller($resource)) && $resource_controller->access($op, $id)) {
+function _restws_resource_retrieve($entity_type, $id) {
+  $wrapper = entity_metadata_wrapper($entity_type, $id);
+  return _restws_resource_get_data($wrapper);
+}
+
+function _restws_resource_create($entity_type, $values) {
+  $entity = entity_property_values_create_entity($entity_type, $values);
+  $entity->save();
+  $id = $entity->getIdentifier();
+  return restws_resource_reference($entity_type, $id);
+}
+
+function _restws_resource_update($entity_type, $id, $values) {
+  $wrapper = entity_metadata_wrapper($entity_type, $id);
+  foreach ($values as $name => $value) {
+    $wrapper->{$name}->set($value);
+  }
+  $wrapper->save();
+}
+
+function _restws_resource_delete($entity_type, $id) {
+  entity_delete($entity_type, $id);
+}
+
+
+function _restws_resource_get_data($wrapper) {
+  $data = array();
+  foreach ($wrapper as $name => $property) {
     try {
-      $method = $op . 'Resource';
-      if ($op == 'create') {
-        print $format->$method($resource_controller, $payload);
-        drupal_add_http_header('Status', '201 Created');
+      if ($property instanceof EntityDrupalWrapper) {
+        // For referenced entities only return the URI.
+        if ($id = $property->getIdentifier()) {
+          $data[$name] = restws_resource_reference($property->type(), $id);
+        }
       }
-      else {
-        print $format->$method($resource_controller, $id, $payload);
+      elseif ($property instanceof EntityValueWrapper) {
+        $data[$name] = $property->value();
       }
-      drupal_add_http_header('Content-Type', $format->mimeType());
+      elseif ($property instanceof EntityListWrapper || $property instanceof EntityStructureWrapper) {
+        $data[$name] = _restws_resource_get_data($property);
+      }
     }
-    catch (RestWSException $e) {
-      echo check_plain($e->getHTTPError());
-      drupal_add_http_header('Status', $e->getHTTPError());
+    catch (EntityMetadataWrapperException $e) {
+      // A property causes problems - ignore that.
     }
   }
-  else {
-    echo '403 Forbidden';
-    drupal_add_http_header('Status', '403 Forbidden');
-    watchdog('access denied', check_plain($_GET['q']), NULL, WATCHDOG_WARNING);
-  }
-  drupal_page_footer();
-  exit;
-}
-
-/**
- * An exception defining the HTTP error code and message.
- */
-class RestWSException extends Exception {
-
-  public function getHTTPError() {
-    return '500 Internal Server Error';
-  }
+  return $data;
 }
 
 /**
  * Implements hook_menu_alter().
  */
 function restws_menu_alter(&$items) {
-  foreach (restws_get_resource_info() as $resource => $info) {
+  foreach (entity_get_info() as $entity_type => $info) {
     // @todo document 'menu path'
-    $menu_path = isset($info['menu_path']) ? $info['menu_path'] : $resource . '/%' . $resource;
+    $menu_path = $entity_type . '/%' . $entity_type;
     if (isset($items[$menu_path])) {
       // Preprend the page callback and the resource to the page arguments.
-      array_unshift($items[$menu_path]['page arguments'], $resource, $items[$menu_path]['page callback']);
+      array_unshift($items[$menu_path]['page arguments'], $entity_type, $items[$menu_path]['page callback']);
       $items[$menu_path]['page callback'] = 'restws_page_callback';
     }
     else {
-      $menu_path = isset($info['menu_path']) ? $info['menu_path'] : $resource . '/%';
       $items[$menu_path] = array(
         'page callback' => 'restws_page_callback',
-        'page arguments' => array($resource),
+        'page arguments' => array($entity_type),
         'access callback' => TRUE,
       );
     }
     // Resource base path (e.g. /node or /user) for creating resources.
     // @todo fix 'menu path'
-    if (!isset($info['menu_path'])) {
-      if (isset($items[$resource])) {
-        // Preprend the page callback and the resource to the page arguments.
-        if (!isset($items[$resource]['page arguments'])) {
-          $items[$resource]['page arguments'] = array();
-        }
-        array_unshift($items[$resource]['page arguments'], $resource, $items[$resource]['page callback']);
-        $items[$resource]['page callback'] = 'restws_page_callback';
+    if (isset($items[$entity_type])) {
+      // Preprend the page callback and the resource to the page arguments.
+      if (!isset($items[$entity_type]['page arguments'])) {
+        $items[$entity_type]['page arguments'] = array();
       }
-      else {
-        $items[$resource] = array(
-          'page callback' => 'restws_page_callback',
-          'page arguments' => array($resource),
-          'access callback' => TRUE,
-        );
-      }
+      array_unshift($items[$entity_type]['page arguments'], $entity_type, $items[$entity_type]['page callback']);
+      $items[$entity_type]['page callback'] = 'restws_page_callback';
+    }
+    else {
+      $items[$entity_type] = array(
+        'page callback' => 'restws_page_callback',
+        'page arguments' => array($entity_type),
+        'access callback' => TRUE,
+      );
     }
   }
 }
@@ -176,48 +214,21 @@ function restws_menu_alter(&$items) {
 /**
  * Menu page callback.
  */
-function restws_page_callback($resource, $page_callback = NULL) {
+function restws_page_callback($entity_type, $page_callback = NULL) {
   $id_arg = arg(1);
-  $format = FALSE;
-  // Check for a appended .format string.
-  if (($pos = strpos($id_arg, '.')) && $format_name = substr($id_arg, $pos + 1)) {
-    $id = substr($id_arg, 0, $pos);
-    $format = restws_format($format_name);
-  }
-  else {
-    // Get format MIME type form HTTP Accept header
-    $parts = explode(',', $_SERVER['HTTP_ACCEPT']);
-    $format_mime = $parts[0];
-    // White list for standard HTML browser requests.
-    if (!in_array($format_mime, array('text/html', 'application/xhtml+xml'))) {
-      $format = restws_format_mimetype($format_mime);
-      $id = $id_arg;
-    }
-  }
-  if ($format) {
-    switch ($_SERVER['REQUEST_METHOD']) {
-      case 'PUT':
-        $op = 'create';
-        break;
-      case 'POST':
-        $op = 'update';
-        break;
-      case 'DELETE':
-        $op = 'delete';
-        break;
-      default:
-        $op = 'view';
-    }
-    $payload = file_get_contents('php://input');
-    restws_handle_request($op, $format, $resource, $id, $payload);
-  }
 
-  // @todo: Determine human readable URIs and redirect, if there is no
-  // page callback.
-  if (isset($page_callback)) {
+  // Check for a appended .format string.
+  if (strpos($id_arg, '.') !== FALSE) {
+    menu_set_active_item('restws/' . $_GET['q']);
+    return menu_execute_active_handler(NULL, FALSE);
+  }
+  else if (isset($page_callback)) {
     // Further page callback arguments have been appended to our arguments.
     $args = func_get_args();
     return call_user_func_array($page_callback, array_slice($args, 2));
+  }
+  else {
+    drupal_not_found();
   }
 }
 
@@ -239,22 +250,4 @@ function restws_resource_reference($resource, $id) {
     'id' => $id,
     'resource' => $resource,
   );
-}
-
-/**
- * Returns the format instance for a given MIME type.
- *
- * @param $mime
- *   The MIME type, e.g. 'application/json' or 'application/xml'.
- *
- * @return
- *   The format controller or FALSE if the format was not found.
- */
-function restws_format_mimetype($mime) {
-  foreach (restws_get_format_info() as $format_name => $info) {
-    if ($info['mime type'] == $mime) {
-      return restws_format($format_name);
-    }
-  }
-  return FALSE;
 }

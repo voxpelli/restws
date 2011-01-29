@@ -1,4 +1,0 @@
-; $Id$
-name = Basic authentication login
-description = User login from HTTP authorization headers.
-core = 7.x
