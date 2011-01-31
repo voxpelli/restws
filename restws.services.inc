@@ -36,28 +36,7 @@ function restws_default_services_endpoint() {
   $endpoint->server = 'rest_server';
   $endpoint->path = 'restws';
   $endpoint->authentication = array();
-  $endpoint->resources = array(
-    'restws_node' => array(
-      'alias' => 'node',
-    ),
-    'restws_comment' => array(
-      'alias' => 'comment',
-      'operations' => array(
-        'create' => array(
-          'enabled' => 1,
-        ),
-        'retrieve' => array(
-          'enabled' => 1,
-        ),
-        'update' => array(
-          'enabled' => 1,
-        ),
-        'delete' => array(
-          'enabled' => 1,
-        ),
-      ),
-    ),
-  );
+  $endpoint->resources = array();
   $endpoint->debug = 1;
   $endpoint->status = 1;
 
