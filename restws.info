@@ -5,3 +5,4 @@ core = 7.x
 files[] = restws.test
 dependencies[] = entity
 dependencies[] = services
+dependencies[] = rest_server
